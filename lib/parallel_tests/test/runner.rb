@@ -40,6 +40,7 @@ module ParallelTests
         # finds all tests and partitions them into groups
         def tests_in_groups(tests, num_groups, options={})
           tests = tests_with_size(tests, options)
+          tests = copy_test_blocks(tests,options)
           Grouper.in_even_groups_by_size(tests, num_groups, options)
         end
 
@@ -188,7 +189,11 @@ module ParallelTests
             puts "Runtime found for #{tests.count(&:last)} of #{tests.size} tests"
           end
 
-          set_unknown_runtime tests, options
+          # fill gaps with unknown-runtime if given, average otherwise
+          known, unknown = tests.partition(&:last)
+          average = (known.any? ? known.map!(&:last).inject(:+) / known.size : 1)
+          unknown_runtime = options[:unknown_runtime] || average
+          unknown.each { |set| set[1] = unknown_runtime }
         end
 
         def runtimes(tests, options)
@@ -236,18 +241,17 @@ module ParallelTests
 
         private
 
-        # fill gaps with unknown-runtime if given, average otherwise
-        # NOTE: an optimization could be doing runtime by average runtime per file size, but would need file checks
-        def set_unknown_runtime(tests, options)
-          known, unknown = tests.partition(&:last)
-          return if unknown.empty?
-          unknown_runtime = options[:unknown_runtime] ||
-            (known.empty? ? 1 : known.map!(&:last).inject(:+) / known.size) # average
-          unknown.each { |set| set[1] = unknown_runtime }
-        end
-
         def report_process_command?(options)
           options[:verbose] || options[:verbose_process_command]
+        end
+
+        def copy_test_blocks(tests,options)
+          return tests unless tests.size == 1 && options[:test_blocks].size > 0
+          test_file = tests.first.first
+          file_size = tests.first.last
+          options[:test_blocks].map do |block|
+            ["#{test_file}:#{block}", file_size]
+          end
         end
       end
     end

@@ -224,6 +224,7 @@ module ParallelTests
         opts.on("--verbose-process-command", "Displays only the command that will be executed by each process") { options[:verbose_process_command] = true }
         opts.on("--verbose-rerun-command", "When there are failures, displays the command executed by each process that failed") { options[:verbose_rerun_command] = true }
         opts.on("--quiet", "Print only tests output") { options[:quiet] = true }
+        opts.on("--test_blocks INT[, INT]", Array,"runs tests blocks in parallel for a single file") { |test_blocks| options[:test_blocks] = test_blocks.map(&:to_i) }
         opts.on("-v", "--version", "Show Version") { puts ParallelTests::VERSION; exit }
         opts.on("-h", "--help", "Show this.") { puts opts; exit }
       end.parse!(argv)
